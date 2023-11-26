@@ -4,38 +4,52 @@ const prisma = new PrismaClient()
 
 async function main() {
   // Clear existing data
+  await prisma.booking.deleteMany({})
   await prisma.user.deleteMany({})
   await prisma.location.deleteMany({})
   await prisma.bike.deleteMany({})
 
+  const users = ['John', 'Maria', 'Tomy']
+
   // Seed Users
-  await prisma.user.createMany({
-    data: [
-      { id: 1, name: 'John', token: 'my_secret_token_123' },
-      { id: 2, name: 'Maria', token: 'MariasSecretToken' },
-      { id: 3, name: 'Tomy', token: '1234' },
-    ],
-    skipDuplicates: true, // This will skip entries with duplicate IDs
-  })
+  for (const user of users) {
+    await prisma.user.create({
+      data: {
+        name: user,
+        token: `${user}sSecretToken`,
+      },
+    })
+  }
 
   // Seed Locations
-  await prisma.location.createMany({
-    data: [
-      { id: 1, name: 'Harbor' },
-      { id: 2, name: 'Airport' },
-      { id: 3, name: 'Park' },
-      { id: 4, name: 'Hall' },
-    ],
-    skipDuplicates: true,
+  const location1 = await prisma.location.create({
+    data: {
+      name: 'Harbor',
+    },
+  })
+  const location2 = await prisma.location.create({
+    data: {
+      name: 'Airport',
+    },
+  })
+  const location3 = await prisma.location.create({
+    data: {
+      name: 'Park',
+    },
+  })
+  const location4 = await prisma.location.create({
+    data: {
+      name: 'Hall',
+    },
   })
 
   // Seed Bikes
   await prisma.bike.createMany({
     data: [
-      { id: 1, type: 'electric', pricePerDay: 10 },
-      { id: 2, type: 'classic', pricePerDay: 3 },
-      { id: 3, type: 'modern', pricePerDay: 5 },
-      { id: 4, type: 'classic', pricePerDay: 3 },
+      { type: 'electric', pricePerDay: 10, locationId: location1.id },
+      { type: 'classic', pricePerDay: 3, locationId: location2.id },
+      { type: 'modern', pricePerDay: 5, locationId: location3.id },
+      { type: 'classic', pricePerDay: 3, locationId: location4.id },
     ],
     skipDuplicates: true,
   })

@@ -11,18 +11,57 @@ datasource db {
 }
 
 model User {
-  id    Int    @id @default(autoincrement())
+  id    String  @id @default(uuid())
   name  String
   token String
+
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 }
 
 model Location {
-  id   Int    @id @default(autoincrement())
+  id    String  @id @default(uuid())
   name String
+
+  bikes     Bike[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 }
 
 model Bike {
-  id           Int    @id @default(autoincrement())
+  id    String  @id @default(uuid())
   type         String
   pricePerDay  Int
+
+  locationId   String
+  location     Location @relation(fields: [locationId], references: [id])
+
+  bookings     Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+}
+
+model Booking {
+  id    String  @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  
+  cost      Int
+
+  bikeId String
+  bike  Bike @relation(fields: [bikeId], references: [id])
+
+  startDate DateTime
+  endDate   DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
 }

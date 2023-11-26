@@ -9,8 +9,16 @@ $ yarn install
 Install prisma globally
 `npm install -g prisma`
 
+`npm install -g dotenv-cli`
+
 Start the database
 `docker compose up -d`
+
+Migrate the DB
+`npx prisma migrate deploy`
+
+Migrate the test DB
+`dotenv -e .env.test -- npx prisma migrate deploy`
 
 Generate the prisma client
 `npx prisma generate`
@@ -48,6 +56,9 @@ $ yarn run test:cov
 ## Other
 
 `npx prettier --write .`
+
+Generating a new migration
+`npx prisma migrate dev --name`
 
 # Notes
 
