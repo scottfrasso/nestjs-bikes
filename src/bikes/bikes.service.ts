@@ -17,16 +17,6 @@ import {
   TooManyBookingsException,
 } from '../utils/errors'
 
-// ## Requirements
-
-// - Each citizen could spend 100 units of currency per calendar month on a rides. Paid booking are not supported yet.
-// - Booking time unit is a day.
-// - Same bike bookings cannot overlap.
-// - Bookings of a single person can't overlap.
-// - A person could have no more than 3 bookings scheduled in the future.
-// - Bikes and locations data is public, but bookings require token.
-// - Booking need to be made at least three days ahead.
-
 const MAX_BOOKINGS_PER_USER = 3
 const MAX_UNITS_PER_MONTH = 100
 
@@ -34,6 +24,21 @@ const MAX_UNITS_PER_MONTH = 100
 export class BikesService {
   constructor(@Inject(PRISMA) private prisma: PrismaClient) {}
 
+  /**
+   * Requirements:
+   *
+   * - Each citizen could spend 100 units of currency per calendar month on a rides.
+   * - Paid booking are not supported yet.
+   * - Booking time unit is a day.
+   * - Same bike bookings cannot overlap.
+   * - Bookings of a single person can't overlap.
+   * - A person could have no more than 3 bookings scheduled in the future.
+   * - Bikes and locations data is public, but bookings require token.
+   * - Booking need to be made at least three days ahead.
+   *
+   * @param createRentalDto The bike rental to create
+   * @returns The created bike rental
+   */
   async createRental(createRentalDto: CreateRentalDTO): Promise<BookingDTO> {
     const { startDate, endDate, userId, bikeId } = createRentalDto
     logger.info('Creating rental', createRentalDto)
@@ -88,21 +93,17 @@ export class BikesService {
       }
 
       // Check that the bike is available
-      const overlappingBookings = await transaction.booking.findMany({
-        where: {
-          bikeId,
-          startDate: {
-            lte: startOfDay(endDate),
-          },
-          endDate: {
-            gte: startOfDay(startDate),
-          },
-        },
-        take: 10,
-      })
+      const overlappingBookings: { id: number }[] = await transaction.$queryRaw`
+        SELECT "public"."Booking"."id"
+        FROM "public"."Booking" 
+        WHERE ("public"."Booking"."bikeId" = ${bikeId}
+          AND date_trunc('day', "public"."Booking"."startDate"::timestamp) <= date_trunc('day', ${endDate}::timestamp)
+          AND date_trunc('day', "public"."Booking"."endDate"::timestamp) >= date_trunc('day', ${startDate}::timestamp)) 
+        ORDER BY "public"."Booking"."id";
+      `
 
       if (overlappingBookings.length > 0) {
-        logger.info('Bike is not available', {
+        logger.debug('Bike is not available', {
           overlappingBookings,
         })
         throw new BikeUnavailableException()

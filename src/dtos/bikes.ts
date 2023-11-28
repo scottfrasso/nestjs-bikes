@@ -1,4 +1,5 @@
-import { IsUUID, IsDateString } from 'class-validator'
+import { IsUUID, IsDate } from 'class-validator'
+import { Type } from 'class-transformer'
 
 export class CreateRentalDTO {
   @IsUUID()
@@ -7,10 +8,12 @@ export class CreateRentalDTO {
   @IsUUID()
   bikeId: string
 
-  @IsDateString()
+  @IsDate()
+  @Type(() => Date)
   startDate: Date
 
-  @IsDateString()
+  @IsDate()
+  @Type(() => Date)
   endDate: Date
 }
 

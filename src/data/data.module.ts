@@ -8,7 +8,9 @@ import { PRISMA } from '../provider-names'
   providers: [
     {
       provide: PRISMA,
-      useValue: new PrismaClient(),
+      useValue: new PrismaClient({
+        //log: ['query'],
+      }),
     },
   ],
   exports: [PRISMA],

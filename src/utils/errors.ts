@@ -17,3 +17,9 @@ export class TooManyBookingsException extends PlatformCustomHttpException {
     super('Too many bookings', HttpStatus.CONFLICT)
   }
 }
+
+export class InvalidUserException extends PlatformCustomHttpException {
+  constructor() {
+    super('Invalid user', HttpStatus.CONFLICT)
+  }
+}

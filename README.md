@@ -4,8 +4,6 @@
 $ yarn install
 ```
 
-## Running the app
-
 Install prisma globally
 `npm install -g prisma`
 
@@ -26,15 +24,31 @@ Generate the prisma client
 Seed the DB
 `npx prisma db seed`
 
+## Running the app
+
 ```bash
-# development
-$ yarn run start
+# Startup docker with postgres
+$ docker compose down -v
 
-# watch mode
+# Migrate the Database
+$ ./redo-db.sh
+
+# Startup the API server
 $ yarn run start:dev
+```
 
-# production mode
-$ yarn run start:prod
+Call the API Server with Curl
+
+```curl
+curl -X POST http://localhost:3000/bikes \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer 123" \
+     -d '{
+         "userId": "b8d2a033-58db-4cdb-96f1-3bd63e50892f",
+         "bikeId": "e03b313e-6c98-41ea-ab1c-0c4e03afe60e",
+         "startDate": "2024-01-18",
+         "endDate": "2024-01-18"
+         }'
 ```
 
 When finished
@@ -45,12 +59,6 @@ When finished
 ```bash
 # unit tests
 $ yarn run test
-
-# e2e tests
-$ yarn run test:e2e
-
-# test coverage
-$ yarn run test:cov
 ```
 
 ## Other
@@ -62,4 +70,27 @@ Generating a new migration
 
 # Notes
 
-To make this production ready I'd also change it so it uses UUID's or some non-monotomically increasing ID so it can't be scraped easily.
+I used NestJS + Prisma because NestJS is a better framework to use for large projects and it enforces some
+more structure to a project than just using express. With Prisma you get a really nice schema in just 1 file
+`prisma/schema.prisma` that's easy to see what the structure of the DB is like. Also prisma auto-generates all
+the types for you so you can do things like this without having to write a ton of boilerplate code:
+
+```typescript
+const user = await transaction.user.findUnique({
+  where: { id: userId },
+  include: {
+    bookings: {
+      where: {
+        startDate: {
+          gte: now,
+        },
+      },
+    },
+  },
+})
+```
+
+I used UUID's so its a non-monotomically increasing ID so it can't be scraped easily. This
+is something that comes up all the time in security scans so you can't use integers as ID's.
+
+In 3 hours I was only able to implement 1 endpoint for booking bikes and to run some tests.

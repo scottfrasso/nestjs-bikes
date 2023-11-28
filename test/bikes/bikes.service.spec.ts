@@ -65,6 +65,62 @@ describe('BikesService', () => {
     expect(rental.bikeId).toEqual(bikeId)
   })
 
+  it('should not create a duplicate rental', async () => {
+    const startDate = new Date('2024-12-15')
+    const endDate = new Date('2024-12-15')
+    const userId = seedData.userId1
+    const bikeId = seedData.bike1
+
+    await service.createRental({
+      startDate,
+      endDate,
+      userId,
+      bikeId,
+    })
+
+    await expect(
+      service.createRental({
+        startDate,
+        endDate,
+        userId,
+        bikeId,
+      }),
+    ).rejects.toThrow(BikeUnavailableException)
+
+    const rentals = await prisma.booking.findMany({
+      where: { userId },
+    })
+    expect(rentals.length).toEqual(1)
+  })
+
+  it('should make two bookings', async () => {
+    const startDate1 = new Date('2024-12-15')
+    const userId = seedData.userId1
+    const bikeId = seedData.bike1
+
+    await service.createRental({
+      startDate: startDate1,
+      endDate: startDate1,
+      userId,
+      bikeId,
+    })
+
+    const startDate2 = new Date('2024-12-16')
+
+    await service.createRental({
+      startDate: startDate2,
+      endDate: startDate2,
+      userId,
+      bikeId,
+    })
+
+    const rentals = await prisma.booking.findMany({
+      where: { userId },
+    })
+
+    expect(rentals.length).toEqual(2)
+  })
+
   it('should not create a rental because the bike is already booked', async () => {
     const startDate = new Date('2023-11-29')
     const endDate = new Date('2023-12-15')
