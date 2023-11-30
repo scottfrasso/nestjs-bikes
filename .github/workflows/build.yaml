@@ -21,14 +21,14 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
 
     steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
       - name: Install PostgreSQL client
-        run: sudo apt-get install postgresql-client
+        run: apt-get install postgresql-client
       - name: Wait for PostgreSQL to be ready
         run: until pg_isready -h localhost -p 5432; do sleep 2; done
       - name: Execute initial SQL file
         run: PGPASSWORD=postgres psql -h localhost -U postgres -d platform -a -f ./init-db.sql
-      - name: Check out repository code
-        uses: actions/checkout@v3
       - name: Install dependencies
         run: yarn install --no-cache
       - name: Install Nest CLI
