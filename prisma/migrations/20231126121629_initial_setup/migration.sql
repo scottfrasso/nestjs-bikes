@@ -1,3 +1,6 @@
+-- Manually add the uuid extension to the database
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
 -- CreateTable
 CREATE TABLE "User" (
     "id" TEXT NOT NULL,

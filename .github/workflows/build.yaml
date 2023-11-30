@@ -27,16 +27,14 @@ jobs:
         run: yarn install --no-cache
       - name: Install Nest CLI
         run: npm i -g @nestjs/cli
-      - name: Build DTOs
-        run: yarn workspace @meme-view/dtos build
-      - name: Generate
-        run: yarn workspace @meme-view/api db:generate
-      - name: Build
-        run: yarn workspace @meme-view/api build
+      - name: Generate the prisma client
+        run: yarn run generate
       - name: Lint
         run: yarn run lint
+      - name: Build
+        run: yarn run build
       - name: Run migrations
-        run: yarn workspace @meme-view/api db:migrate:dev
+        run: yarn run migrate:test
       - name: Run tests
-        run: yarn workspace @meme-view/api run test:e2e
+        run: yarn run test
       - run: echo "🚀 This job's status is ${{ job.status }}."
