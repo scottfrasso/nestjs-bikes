@@ -6,6 +6,9 @@ on:
 jobs:
   auto-merge:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - name: Auto merge Dependabot PRs
         uses: ahmadnassri/action-dependabot-auto-merge@v2
