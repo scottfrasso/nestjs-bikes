@@ -1,0 +1,42 @@
+name: Build
+on: [push]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: node:20-bullseye-slim
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
+
+    services:
+      postgres:
+        image: postgres:16.0
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        # needed because the postgres container does not provide a healthcheck
+        options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v3
+      - name: Install dependencies
+        run: yarn install --no-cache
+      - name: Install Nest CLI
+        run: npm i -g @nestjs/cli
+      - name: Build DTOs
+        run: yarn workspace @meme-view/dtos build
+      - name: Generate
+        run: yarn workspace @meme-view/api db:generate
+      - name: Build
+        run: yarn workspace @meme-view/api build
+      - name: Lint
+        run: yarn run lint
+      - name: Run migrations
+        run: yarn workspace @meme-view/api db:migrate:dev
+      - name: Run tests
+        run: yarn workspace @meme-view/api run test:e2e
+      - run: echo "🚀 This job's status is ${{ job.status }}."
