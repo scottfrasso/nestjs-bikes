@@ -23,12 +23,17 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v3
-      - name: Install PostgreSQL client
-        run: apt-get update & apt-get install -y postgresql-client
       - name: Wait for PostgreSQL to be ready
-        run: until pg_isready -h localhost -p 5432; do sleep 2; done
+        run: sleep 10
       - name: Execute initial SQL file
-        run: PGPASSWORD=postgres psql -h localhost -U postgres -d platform -a -f ./init-db.sql
+        uses: docker://postgres
+        with:
+          entrypoint: /bin/sh
+          args:
+            - -c
+            - |
+              apk add --no-cache postgresql-client &&
+              PGPASSWORD=postgres psql -h localhost -U postgres -d platform -a -f ./init-db.sql
       - name: Install dependencies
         run: yarn install --no-cache
       - name: Install Nest CLI
