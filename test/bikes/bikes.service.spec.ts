@@ -195,7 +195,7 @@ describe('BikesService', () => {
     it('should search for open bikes', async () => {
       const startDate1 = new Date('2024-7-15')
 
-      const results = await service.getAvailableBikes({
+      const results = await service.search({
         startDate: startDate1,
         endDate: startDate1,
       })
@@ -223,7 +223,7 @@ describe('BikesService', () => {
     it('should search for bikes at location #1', async () => {
       const startDate1 = new Date('2024-7-15')
 
-      const results = await service.getAvailableBikes({
+      const results = await service.search({
         startDate: startDate1,
         endDate: startDate1,
         locationIds: [seedData.location1],
@@ -240,7 +240,7 @@ describe('BikesService', () => {
     it('should search for bikes with a price per day of 10', async () => {
       const startDate1 = new Date('2024-7-15')
 
-      const results = await service.getAvailableBikes({
+      const results = await service.search({
         startDate: startDate1,
         endDate: startDate1,
         pricePerDayMin: 10,
@@ -257,7 +257,7 @@ describe('BikesService', () => {
     it('should search for bikes that are available', async () => {
       const startDate1 = new Date('2023-12-01')
 
-      const results = await service.getAvailableBikes({
+      const results = await service.search({
         startDate: startDate1,
         endDate: startDate1,
       })

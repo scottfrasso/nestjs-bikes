@@ -1,6 +1,10 @@
 import { Controller, Post, Body, UseGuards } from '@nestjs/common'
 
-import { AuthorizedUserDTO, CreateRentalDTO } from '../dtos'
+import {
+  AuthorizedUserDTO,
+  BikeRentalSearchRequestDTO,
+  CreateRentalDTO,
+} from '../dtos'
 import { BikesService } from './bikes.service'
 import { GetUser, UserGuard } from '../auth'
 import { InvalidUserException } from '../utils/errors'
@@ -20,5 +24,10 @@ export class BikesController {
     }
 
     return await this.bikeService.createRental(createRentalDto)
+  }
+
+  @Post('search')
+  async search(@Body() searchRequest: BikeRentalSearchRequestDTO) {
+    return await this.bikeService.search(searchRequest)
   }
 }

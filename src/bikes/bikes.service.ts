@@ -181,7 +181,7 @@ export class BikesService {
    * @param searchRequest Search request DTO
    * @returns
    */
-  async getAvailableBikes(
+  async search(
     searchRequest: BikeRentalSearchRequestDTO,
   ): Promise<BikeRentalSearchResponseDTO> {
     const defaultOptions = {
