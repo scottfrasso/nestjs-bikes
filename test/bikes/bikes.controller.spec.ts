@@ -92,7 +92,7 @@ describe('BikesController', () => {
       .post('/bikes')
       .send(bikeRentalRequest)
       .set('Authorization', 'Bearer invalid-token')
-      .expect(409)
+      .expect(401)
 
     expect(createRentalSpy).not.toHaveBeenCalled()
   })
@@ -109,7 +109,7 @@ describe('BikesController', () => {
       .post('/bikes')
       .send(bikeRentalRequest)
       .set('Authorization', 'Bearer invalid-token')
-      .expect(400)
+      .expect(401)
 
     expect(createRentalSpy).not.toHaveBeenCalled()
   })
@@ -123,7 +123,7 @@ describe('BikesController', () => {
         startDate: new Date(),
         endDate: 'not-a-date',
       })
-      .set('Authorization', 'Bearer invalid-token')
+      .set('Authorization', `Bearer ${seedData.user1Token}`)
       .expect(400)
 
     expect(createRentalSpy).not.toHaveBeenCalled()

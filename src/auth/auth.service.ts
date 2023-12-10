@@ -9,6 +9,16 @@ import { PRISMA } from '../provider-names'
 export class AuthService {
   constructor(@Inject(PRISMA) private prisma: PrismaClient) {}
 
+  async validateUserToken(token: string): Promise<UserDBO | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { token },
+    })
+    if (!user) {
+      return null
+    }
+    return user
+  }
+
   async validateUser(userId: string, token: string): Promise<UserDBO | null> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId, token },
