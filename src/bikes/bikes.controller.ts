@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Headers, UseGuards } from '@nestjs/common'
+import { Controller, Post, Body, UseGuards } from '@nestjs/common'
 
 import { AuthorizedUserDTO, CreateRentalDTO } from '../dtos'
 import { BikesService } from './bikes.service'
