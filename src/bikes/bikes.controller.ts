@@ -1,29 +1,21 @@
-import { Controller, Post, Body, Headers } from '@nestjs/common'
+import { Controller, Post, Body, UseGuards } from '@nestjs/common'
 
-import { CreateRentalDTO } from '../dtos'
+import { AuthorizedUserDTO, CreateRentalDTO } from '../dtos'
 import { BikesService } from './bikes.service'
-import { AuthService } from '../auth'
+import { GetUser, UserGuard } from '../auth'
 import { InvalidUserException } from '../utils/errors'
 
 @Controller('bikes')
 export class BikesController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly bikeService: BikesService,
-  ) {}
+  constructor(private readonly bikeService: BikesService) {}
 
   @Post()
+  @UseGuards(UserGuard)
   async create(
-    @Headers('Authorization') token: string,
     @Body() createRentalDto: CreateRentalDTO,
+    @GetUser() user: AuthorizedUserDTO,
   ) {
-    // Given more time I'd make something to do this better
-    const usersToken = token.split(' ')[1]
-    const user = await this.authService.validateUser(
-      createRentalDto.userId,
-      usersToken,
-    )
-    if (!user) {
+    if (user.userId !== createRentalDto.userId) {
       throw new InvalidUserException()
     }
 
