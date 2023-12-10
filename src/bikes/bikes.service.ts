@@ -6,9 +6,14 @@ import {
   differenceInCalendarDays,
 } from 'date-fns'
 
-import { PrismaClient } from '@prisma/client'
+import { Prisma, PrismaClient } from '@prisma/client'
 
-import { BookingDTO, CreateRentalDTO } from '../dtos'
+import {
+  BikeRentalSearchRequestDTO,
+  BikeRentalSearchResponseDTO,
+  BookingDTO,
+  CreateRentalDTO,
+} from '../dtos'
 import { PRISMA } from '../provider-names'
 import { logger } from '../logging/logger'
 import { getCurrentDate } from '../utils/date'
@@ -17,6 +22,7 @@ import {
   TooManyBookingsException,
 } from '../utils/errors'
 
+const DAYS_IN_ADANCE = 3
 const MAX_BOOKINGS_PER_USER = 3
 const MAX_UNITS_PER_MONTH = 100
 
@@ -49,51 +55,53 @@ export class BikesService {
       startOfDay(startDate),
       now,
     )
-    if (daysUntilBooking < 3) {
+    if (daysUntilBooking < DAYS_IN_ADANCE) {
       throw new Error('Booking must be at least 3 days ahead')
     }
 
-    return await this.prisma.$transaction(async (transaction) => {
-      logger.info('Starting transaction')
-      // Check that the user exists
-      const user = await transaction.user.findUnique({
-        where: { id: userId },
-        include: {
-          bookings: {
-            where: {
-              startDate: {
-                gte: now,
+    return await this.prisma.$transaction(
+      async (transaction: Prisma.TransactionClient) => {
+        logger.info('Starting transaction')
+        // Check that the user exists
+        const user = await transaction.user.findUnique({
+          where: { id: userId },
+          include: {
+            bookings: {
+              where: {
+                startDate: {
+                  gte: now,
+                },
               },
             },
           },
-        },
-      })
+        })
 
-      if (!user) {
-        throw new Error('Invalid user')
-      }
+        if (!user) {
+          throw new Error('Invalid user')
+        }
 
-      if (user.bookings.length + 1 >= MAX_BOOKINGS_PER_USER) {
-        throw new TooManyBookingsException()
-      }
+        if (user.bookings.length + 1 >= MAX_BOOKINGS_PER_USER) {
+          throw new TooManyBookingsException()
+        }
 
-      // Check that the bike exists
-      const bike = await transaction.bike.findUnique({
-        where: { id: bikeId },
-        include: {
-          location: true,
-        },
-      })
-      if (!bike) {
-        throw new Error('Invalid bike')
-      }
+        // Check that the bike exists
+        const bike = await transaction.bike.findUnique({
+          where: { id: bikeId },
+          include: {
+            location: true,
+          },
+        })
+        if (!bike) {
+          throw new Error('Invalid bike')
+        }
 
-      if (!bike.location) {
-        throw new Error('Bike is not available')
-      }
+        if (!bike.location) {
+          throw new Error('Bike is not available')
+        }
 
-      // Check that the bike is available
-      const overlappingBookings: { id: number }[] = await transaction.$queryRaw`
+        // Check that the bike is available
+        const overlappingBookings: { id: number }[] =
+          await transaction.$queryRaw`
         SELECT "public"."Booking"."id"
         FROM "public"."Booking" 
         WHERE ("public"."Booking"."bikeId" = ${bikeId}
@@ -102,64 +110,155 @@ export class BikesService {
         ORDER BY "public"."Booking"."id";
       `
 
-      if (overlappingBookings.length > 0) {
-        logger.debug('Bike is not available', {
-          overlappingBookings,
-        })
-        throw new BikeUnavailableException()
-      }
+        if (overlappingBookings.length > 0) {
+          logger.debug('Bike is not available', {
+            overlappingBookings,
+          })
+          throw new BikeUnavailableException()
+        }
 
-      // Check that the user has enough units
-      const bookingsForStartMonth = await transaction.booking.aggregate({
-        where: {
-          userId,
-          startDate: {
-            gte: startOfDay(startOfMonth(startDate)),
-            lte: startOfDay(endOfMonth(startDate)),
+        // Check that the user has enough units
+        const bookingsForStartMonth = await transaction.booking.aggregate({
+          where: {
+            userId,
+            startDate: {
+              gte: startOfDay(startOfMonth(startDate)),
+              lte: startOfDay(endOfMonth(startDate)),
+            },
           },
-        },
-        _sum: {
-          cost: true,
-        },
-      })
+          _sum: {
+            cost: true,
+          },
+        })
 
-      const costOfUnitsForBookingMonth = bookingsForStartMonth._sum.cost || 0
+        const costOfUnitsForBookingMonth = bookingsForStartMonth._sum.cost || 0
 
-      const daysForBooking = differenceInCalendarDays(endDate, startDate) + 1
-      const costOfBooking = daysForBooking * bike.pricePerDay
+        const daysForBooking = differenceInCalendarDays(endDate, startDate) + 1
+        const costOfBooking = daysForBooking * bike.pricePerDay
 
-      if (costOfUnitsForBookingMonth + costOfBooking > MAX_UNITS_PER_MONTH) {
-        throw new Error('Not enough units')
-      }
+        if (costOfUnitsForBookingMonth + costOfBooking > MAX_UNITS_PER_MONTH) {
+          throw new Error('Not enough units')
+        }
 
-      logger.info('Creating booking', {
-        userId,
-        bikeId,
-        startDate,
-        endDate,
-        costOfBooking,
-      })
-
-      // Create the booking
-      const createdBooking = await transaction.booking.create({
-        data: {
+        logger.info('Creating booking', {
           userId,
           bikeId,
-          cost: costOfBooking,
           startDate,
           endDate,
-        },
-      })
+          costOfBooking,
+        })
 
-      return {
-        id: createdBooking.id,
-        userId: createdBooking.userId,
-        bikeId: createdBooking.bikeId,
-        locationId: bike.locationId,
-        cost: createdBooking.cost,
-        startDate: createdBooking.startDate.toISOString(),
-        endDate: createdBooking.endDate.toISOString(),
+        // Create the booking
+        const createdBooking = await transaction.booking.create({
+          data: {
+            userId,
+            bikeId,
+            cost: costOfBooking,
+            startDate,
+            endDate,
+          },
+        })
+
+        return {
+          id: createdBooking.id,
+          userId: createdBooking.userId,
+          bikeId: createdBooking.bikeId,
+          locationId: bike.locationId,
+          cost: createdBooking.cost,
+          startDate: createdBooking.startDate.toISOString(),
+          endDate: createdBooking.endDate.toISOString(),
+        }
+      },
+    )
+  }
+
+  /**
+   * Search for bikes based on the following criteria:
+   * locations
+   * price per day
+   * start/end date
+   *
+   * @param searchRequest Search request DTO
+   * @returns
+   */
+  async search(
+    searchRequest: BikeRentalSearchRequestDTO,
+  ): Promise<BikeRentalSearchResponseDTO> {
+    const defaultOptions = {
+      locationIds: [],
+      costPerDayMin: 0,
+      costPerDayMax: 100000,
+    }
+
+    const options = {
+      ...defaultOptions,
+      ...searchRequest,
+    }
+
+    const { startDate, endDate, locationIds, pricePerDayMin, pricePerDayMax } =
+      options
+
+    const where: Prisma.BikeWhereInput = {}
+
+    // Locations
+    if (locationIds.length > 0) {
+      where.locationId = {
+        in: locationIds,
       }
+    }
+
+    // Price per day
+    if (pricePerDayMin) {
+      where.pricePerDay = {
+        gte: pricePerDayMin,
+      }
+    }
+    if (pricePerDayMax) {
+      where.pricePerDay = {
+        lte: pricePerDayMax,
+      }
+    }
+
+    const query = await this.prisma.bike.findMany({
+      where: {
+        ...where,
+        bookings: {
+          none: {
+            OR: [
+              {
+                startDate: {
+                  lte: new Date(endDate),
+                },
+                endDate: {
+                  gte: new Date(startDate),
+                },
+              },
+            ],
+          },
+        },
+      },
+      include: {
+        location: true,
+      },
+      orderBy: {
+        pricePerDay: 'asc',
+      },
     })
+
+    const bikes = await query
+
+    const bikeItems = bikes.map((bike) => ({
+      id: bike.id,
+      locationId: bike.locationId,
+      pricePerDay: bike.pricePerDay,
+      location: {
+        id: bike.location.id,
+        name: bike.location.name,
+      },
+    }))
+
+    return {
+      bikes: bikeItems,
+    }
   }
 }

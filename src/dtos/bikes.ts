@@ -1,4 +1,4 @@
-import { IsUUID, IsDate } from 'class-validator'
+import { IsUUID, IsDate, IsOptional } from 'class-validator'
 import { Type } from 'class-transformer'
 
 export class CreateRentalDTO {
@@ -25,4 +25,37 @@ export class BookingDTO {
   locationId: string
   startDate: string
   endDate: string
+}
+
+export class BikeRentalSearchRequestDTO {
+  @IsOptional()
+  locationIds?: string[]
+
+  @IsDate()
+  @Type(() => Date)
+  startDate: Date
+
+  @IsDate()
+  @Type(() => Date)
+  endDate: Date
+
+  @IsOptional()
+  pricePerDayMin?: number
+
+  @IsOptional()
+  pricePerDayMax?: number
+}
+
+export class BikeRentalSearchItemDTO {
+  id: string
+  locationId: string
+  pricePerDay: number
+  location: {
+    id: string
+    name: string
+  }
+}
+
+export class BikeRentalSearchResponseDTO {
+  bikes: BikeRentalSearchItemDTO[]
 }
