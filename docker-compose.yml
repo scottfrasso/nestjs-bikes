@@ -7,9 +7,6 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: platform
-      # Set logging configurations
-      PG_LOG_STATEMENT: 'all'
-      PG_LOG_DURATION: 'on'
     volumes:
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     ports:
